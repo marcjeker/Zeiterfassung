@@ -197,6 +197,42 @@
     border-radius:50%;
     background:var(--warm);
   }
+  .wirbi-card{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    text-align:center;
+    gap:10px;
+    padding:22px 24px 18px;
+  }
+  .wirbi-bubble{
+    background:var(--accent-light);
+    border-radius:14px;
+    padding:11px 18px;
+    font-size:14px;
+    font-weight:600;
+    color:var(--text);
+    max-width:320px;
+    transition:opacity .25s ease, transform .25s ease;
+  }
+  .wirbi-figure{
+    transform-origin:bottom center;
+  }
+  .wirbi-figure.bounce{
+    animation:assistantBounce .6s ease;
+  }
+  @keyframes assistantBounce{
+    0%{transform:scale(1);}
+    30%{transform:scale(1.08) translateY(-6px);}
+    60%{transform:scale(0.98) translateY(0);}
+    100%{transform:scale(1);}
+  }
+  .wirbi-name{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:14px;
+    color:var(--text-muted);
+  }
   .hour-grid{
     margin-top:24px;
   }
@@ -334,6 +370,39 @@
     <div class="streak" id="streakBadge">– Tage in Folge</div>
   </header>
 
+  <div class="card wirbi-card">
+    <div class="wirbi-bubble" id="assistantBubble">Hallo, ich bin Wirbi! Ich freue mich auf deine Einträge heute.</div>
+    <svg class="wirbi-figure" id="assistant" width="92" height="130" viewBox="0 0 100 150" xmlns="http://www.w3.org/2000/svg">
+      <!-- Sockel -->
+      <ellipse cx="50" cy="138" rx="16" ry="8" fill="#E3DCC7"/>
+      <!-- Wirbel-Torso -->
+      <rect x="32" y="108" width="36" height="15" rx="6" fill="#F3EEE0"/>
+      <rect x="30" y="90" width="40" height="16" rx="6.5" fill="#F3EEE0"/>
+      <rect x="29" y="71" width="42" height="17" rx="7" fill="#F3EEE0"/>
+      <rect x="30" y="53" width="40" height="16" rx="6.5" fill="#F3EEE0"/>
+      <!-- kleine Dornfortsätze -->
+      <rect x="66" y="113" width="6" height="3" rx="1.5" fill="#E3DCC7"/>
+      <rect x="28" y="95" width="6" height="3" rx="1.5" fill="#E3DCC7"/>
+      <rect x="67" y="76" width="6" height="3" rx="1.5" fill="#E3DCC7"/>
+      <rect x="27" y="58" width="6" height="3" rx="1.5" fill="#E3DCC7"/>
+      <!-- Arme -->
+      <path d="M30 62 Q14 68 12 84" stroke="#F3EEE0" stroke-width="7" stroke-linecap="round" fill="none"/>
+      <path d="M70 62 Q88 55 92 40" stroke="#F3EEE0" stroke-width="7" stroke-linecap="round" fill="none"/>
+      <circle cx="93" cy="37" r="5.5" fill="#F3EEE0"/>
+      <circle cx="11" cy="86" r="5.5" fill="#F3EEE0"/>
+      <!-- Kopf -->
+      <circle cx="50" cy="26" r="20" fill="#F3EEE0"/>
+      <circle cx="42.5" cy="25" r="3.2" fill="#173A4D"/>
+      <circle cx="57.5" cy="25" r="3.2" fill="#173A4D"/>
+      <circle cx="43.6" cy="23.8" r="1" fill="#fff"/>
+      <circle cx="58.6" cy="23.8" r="1" fill="#fff"/>
+      <path d="M41 33Q50 39 59 33" stroke="#173A4D" stroke-width="2" stroke-linecap="round" fill="none"/>
+      <circle cx="33" cy="30" r="3.5" fill="#F3B6A6" opacity="0.55"/>
+      <circle cx="67" cy="30" r="3.5" fill="#F3B6A6" opacity="0.55"/>
+    </svg>
+    <div class="wirbi-name">Wirbi</div>
+  </div>
+
   <div class="card">
     <div class="date-nav">
       <button id="prevDay">‹</button>
@@ -400,6 +469,40 @@ const HOUR_GROUPS = [
   { label: 'Nachmittag (12–17)', start: 12 },
   { label: 'Abend (18–23)', start: 18 }
 ];
+
+const HOUR_MESSAGES = [
+  'Stark gemacht! 💪',
+  'Jede Stunde bringt dich weiter.',
+  'Weiter so, das lohnt sich!',
+  'Du machst das richtig gut.',
+  'Deine Wirbelsäule sagt Danke!',
+  'Klasse, dranbleiben zahlt sich aus!'
+];
+const PHYSIO_MESSAGES = [
+  'Super, Übungen erledigt!',
+  'Stark! Das stärkt deinen Rücken.',
+  'Sehr gut gemacht heute!',
+  'Weiter so, du bist auf einem tollen Weg!',
+  'Gut gemacht, das war bestimmt nicht immer leicht.'
+];
+
+let assistantTimeout = null;
+function showAssistantMessage(pool){
+  const bubble = document.getElementById('assistantBubble');
+  const figure = document.getElementById('assistant');
+  const msg = pool[Math.floor(Math.random() * pool.length)];
+  bubble.style.opacity = 0;
+  bubble.style.transform = 'translateY(4px)';
+  clearTimeout(assistantTimeout);
+  assistantTimeout = setTimeout(() => {
+    bubble.textContent = msg;
+    bubble.style.opacity = 1;
+    bubble.style.transform = 'translateY(0)';
+  }, 120);
+  figure.classList.remove('bounce');
+  void figure.getBBox(); // reflow, damit die Animation erneut startet
+  figure.classList.add('bounce');
+}
 
 let data = { goalHours: 20, days: {} };
 let selectedDate = toDateStr(new Date());
@@ -475,10 +578,12 @@ function saveData(){
 function toggleHour(dateStr, hour){
   const day = ensureDayObj(dateStr);
   const set = new Set(day.hours);
-  if(set.has(hour)) set.delete(hour); else set.add(hour);
+  const wasOn = set.has(hour);
+  if(wasOn) set.delete(hour); else set.add(hour);
   day.hours = Array.from(set);
   saveData();
   render();
+  if(!wasOn) showAssistantMessage(HOUR_MESSAGES);
 }
 
 function togglePhysio(dateStr){
@@ -486,6 +591,7 @@ function togglePhysio(dateStr){
   day.physio = !day.physio;
   saveData();
   render();
+  if(day.physio) showAssistantMessage(PHYSIO_MESSAGES);
 }
 
 function computeStreak(){
