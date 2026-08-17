@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Aufrecht – Trage-Tracker</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Aufrecht">
+<meta name="theme-color" content="#F2F5F3">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EFF5F8;
+    --surface:#FFFFFF;
+    --text:#173A4D;
+    --text-muted:#5B7C8A;
+    --accent:#1F7FA8;
+    --accent-light:#D6EBF3;
+    --warm:#D98E4A;
+    --warm-light:#FBEADA;
+    --empty:#E0EAEF;
+    --border:#E0EAEF;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{
+    max-width:720px;
+    margin:0 auto;
+    padding:32px 20px 80px;
+  }
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    margin-bottom:28px;
+  }
+  h1{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:32px;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  .subtitle{
+    color:var(--text-muted);
+    font-size:14px;
+    margin-top:4px;
+  }
+  .streak{
+    background:var(--warm-light);
+    color:#8A5A24;
+    border-radius:20px;
+    padding:8px 14px;
+    font-size:13px;
+    font-weight:600;
+    white-space:nowrap;
+  }
+  .card{
+    background:var(--surface);
+    border-radius:16px;
+    border:1px solid var(--border);
+    padding:24px;
+    margin-bottom:16px;
+  }
+  .date-nav{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:16px;
+    margin-bottom:20px;
+  }
+  .date-nav button{
+    background:none;
+    border:1px solid var(--border);
+    border-radius:10px;
+    width:36px;
+    height:36px;
+    font-size:16px;
+    color:var(--text);
+    cursor:pointer;
+  }
+  .date-nav button:hover{background:var(--bg);}
+  .date-label{
+    font-weight:600;
+    font-size:15px;
+    min-width:180px;
+    text-align:center;
+  }
+  .today-btn{
+    display:block;
+    margin:0 auto 20px;
+    background:none;
+    border:none;
+    color:var(--accent);
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+    text-decoration:underline;
+  }
+  .hero{
+    display:flex;
+    gap:28px;
+    align-items:center;
+  }
+  .spine{
+    flex-shrink:0;
+    width:90px;
+  }
+  .spine svg{display:block;width:100%;height:auto;}
+  .spine .body{fill:var(--empty);transition:fill .15s;}
+  .spine .process{fill:var(--empty);transition:fill .15s;}
+  .spine .body.filled{fill:var(--accent);}
+  .spine .process.filled{fill:var(--accent);}
+  .status{
+    flex:1;
+  }
+  .big-number{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:52px;
+    line-height:1;
+  }
+  .big-number span{
+    font-size:22px;
+    color:var(--text-muted);
+    font-weight:500;
+  }
+  .goal-text{
+    color:var(--text-muted);
+    font-size:14px;
+    margin-top:8px;
+  }
+  .goal-text.met{color:var(--accent);font-weight:600;}
+  .title-row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .mascot{flex-shrink:0;}
+  .physio-card{
+    display:flex;
+  }
+  .physio-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    width:100%;
+    gap:16px;
+  }
+  .physio-title{
+    font-weight:600;
+    font-size:15px;
+  }
+  .physio-sub{
+    color:var(--text-muted);
+    font-size:13px;
+    margin-top:2px;
+  }
+  .physio-sub.done{color:var(--accent);font-weight:600;}
+  .physio-btn{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    background:var(--surface);
+    border:1.5px solid var(--border);
+    border-radius:10px;
+    padding:10px 16px;
+    font-size:13px;
+    font-weight:600;
+    color:var(--text-muted);
+    cursor:pointer;
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+  .physio-btn svg{color:var(--text-muted);}
+  .physio-btn.done{
+    background:var(--accent-light);
+    border-color:var(--accent);
+    color:var(--accent);
+  }
+  .physio-btn.done svg{color:var(--accent);}
+  .physio-dot{
+    position:absolute;
+    bottom:3px;
+    right:4px;
+    width:5px;
+    height:5px;
+    border-radius:50%;
+    background:var(--warm);
+  }
+  .hour-grid{
+    margin-top:24px;
+  }
+  .row-group{
+    margin-bottom:14px;
+  }
+  .row-label{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    color:var(--text-muted);
+    margin-bottom:8px;
+    font-weight:600;
+  }
+  .row-hours{
+    display:grid;
+    grid-template-columns:repeat(6,1fr);
+    gap:6px;
+  }
+  .hour-btn{
+    aspect-ratio:1;
+    border-radius:8px;
+    border:1px solid var(--border);
+    background:var(--surface);
+    color:var(--text-muted);
+    font-size:12px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:all .1s;
+  }
+  .hour-btn:hover{border-color:var(--accent);}
+  .hour-btn.on{
+    background:var(--accent);
+    border-color:var(--accent);
+    color:#fff;
+    font-weight:600;
+  }
+  .history-card h2{
+    font-family:'Fraunces',serif;
+    font-size:18px;
+    font-weight:600;
+    margin:0 0 4px;
+  }
+  .history-sub{
+    color:var(--text-muted);
+    font-size:13px;
+    margin-bottom:18px;
+  }
+  .heatmap{
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    gap:6px;
+  }
+  .day-cell{
+    aspect-ratio:1;
+    border-radius:6px;
+    background:var(--empty);
+    cursor:pointer;
+    position:relative;
+    border:1.5px solid transparent;
+  }
+  .day-cell.selected{border-color:var(--text);}
+  .day-cell .num{
+    position:absolute;
+    top:3px;
+    left:5px;
+    font-size:9px;
+    color:var(--text-muted);
+  }
+  .day-cell.has-data .num{color:rgba(255,255,255,0.85);}
+  .legend{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    margin-top:14px;
+    font-size:12px;
+    color:var(--text-muted);
+  }
+  .legend .sq{width:12px;height:12px;border-radius:3px;}
+  .settings-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    font-size:14px;
+  }
+  .settings-row label{color:var(--text-muted);}
+  .goal-input{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .goal-input button{
+    width:28px;height:28px;
+    border-radius:8px;
+    border:1px solid var(--border);
+    background:var(--surface);
+    cursor:pointer;
+    font-size:14px;
+  }
+  .goal-input .val{
+    font-weight:600;
+    min-width:60px;
+    text-align:center;
+  }
+  .save-hint{
+    text-align:center;
+    font-size:12px;
+    color:var(--text-muted);
+    margin-top:20px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="title-row">
+      <svg class="mascot" width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+        <ellipse cx="12" cy="10" rx="5" ry="8" transform="rotate(-18 12 10)" fill="#1F7FA8"/>
+        <ellipse cx="28" cy="10" rx="5" ry="8" transform="rotate(18 28 10)" fill="#1F7FA8"/>
+        <circle cx="20" cy="22" r="14" fill="#2C9BC9"/>
+        <ellipse cx="20" cy="25" rx="9" ry="7" fill="#D6EBF3"/>
+        <circle cx="15.5" cy="21" r="2.6" fill="#173A4D"/>
+        <circle cx="24.5" cy="21" r="2.6" fill="#173A4D"/>
+        <circle cx="16.3" cy="20.2" r="0.8" fill="#fff"/>
+        <circle cx="25.3" cy="20.2" r="0.8" fill="#fff"/>
+        <path d="M17 27.5Q20 30 23 27.5" stroke="#173A4D" stroke-width="1.4" stroke-linecap="round" fill="none"/>
+      </svg>
+      <div>
+        <h1>Aufrecht</h1>
+        <div class="subtitle">Trage-Tracker fürs Korsett</div>
+      </div>
+    </div>
+    <div class="streak" id="streakBadge">– Tage in Folge</div>
+  </header>
+
+  <div class="card">
+    <div class="date-nav">
+      <button id="prevDay">‹</button>
+      <div class="date-label" id="dateLabel">Heute</div>
+      <button id="nextDay">›</button>
+    </div>
+    <button class="today-btn" id="todayBtn" style="display:none;">Zu heute springen</button>
+
+    <div class="hero">
+      <div class="spine" id="spine"></div>
+      <div class="status">
+        <div class="big-number" id="bigNumber">0<span>h</span></div>
+        <div class="goal-text" id="goalText">von 20h Ziel</div>
+      </div>
+    </div>
+
+    <div class="hour-grid" id="hourGrid"></div>
+  </div>
+
+  <div class="card physio-card">
+    <div class="physio-row">
+      <div class="physio-text">
+        <div class="physio-title">Physio-Übungen</div>
+        <div class="physio-sub" id="physioSub">Heute noch offen</div>
+      </div>
+      <button class="physio-btn" id="physioBtn">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10.5L8 14.5L16 5.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span id="physioBtnLabel">Erledigt markieren</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="card history-card">
+    <h2>Verlauf</h2>
+    <div class="history-sub">Letzte 4 Wochen – dunkler heisst mehr Stunden, Punkt = Physio erledigt</div>
+    <div class="heatmap" id="heatmap"></div>
+    <div class="legend">
+      <span>Wenig</span>
+      <span class="sq" style="background:#CFE1EB"></span>
+      <span class="sq" style="background:#5FA0C2"></span>
+      <span class="sq" style="background:var(--accent)"></span>
+      <span>Ziel erreicht</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="settings-row">
+      <label>Tagesziel (Stunden)</label>
+      <div class="goal-input">
+        <button id="goalMinus">−</button>
+        <div class="val" id="goalVal">20h</div>
+        <button id="goalPlus">+</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="save-hint" id="saveHint">Änderungen werden automatisch gespeichert</div>
+</div>
+
+<script>
+const HOUR_GROUPS = [
+  { label: 'Nacht (00–05)', start: 0 },
+  { label: 'Morgen (06–11)', start: 6 },
+  { label: 'Nachmittag (12–17)', start: 12 },
+  { label: 'Abend (18–23)', start: 18 }
+];
+
+let data = { goalHours: 20, days: {} };
+let selectedDate = toDateStr(new Date());
+let loaded = false;
+
+function toDateStr(d){
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function fromDateStr(s){
+  const [y,m,d] = s.split('-').map(Number);
+  return new Date(y, m-1, d);
+}
+function formatLabel(dateStr){
+  const d = fromDateStr(dateStr);
+  const today = toDateStr(new Date());
+  const yestDate = new Date(); yestDate.setDate(yestDate.getDate()-1);
+  const yesterday = toDateStr(yestDate);
+  if(dateStr === today) return 'Heute';
+  if(dateStr === yesterday) return 'Gestern';
+  return d.toLocaleDateString('de-DE', { weekday:'short', day:'numeric', month:'short' });
+}
+function hoursFor(dateStr){
+  const day = data.days[dateStr];
+  const arr = Array.isArray(day) ? day : (day && day.hours) || [];
+  return arr.slice().sort((a,b)=>a-b);
+}
+function countFor(dateStr){
+  return hoursFor(dateStr).length;
+}
+function physioFor(dateStr){
+  const day = data.days[dateStr];
+  return !!(day && !Array.isArray(day) && day.physio);
+}
+function ensureDayObj(dateStr){
+  const existing = data.days[dateStr];
+  if(!existing){
+    data.days[dateStr] = { hours: [], physio: false };
+  } else if(Array.isArray(existing)){
+    data.days[dateStr] = { hours: existing, physio: false };
+  }
+  return data.days[dateStr];
+}
+
+async function loadData(){
+  try{
+    const raw = localStorage.getItem('aufrecht-data');
+    if(raw){
+      const parsed = JSON.parse(raw);
+      data = { goalHours: parsed.goalHours || 20, days: parsed.days || {} };
+    }
+  }catch(e){
+    console.log('Keine bisherigen Daten gefunden, starte neu.');
+  }
+  loaded = true;
+  render();
+}
+
+let saveTimeout = null;
+function saveData(){
+  const hint = document.getElementById('saveHint');
+  hint.textContent = 'Speichere…';
+  clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(() => {
+    try{
+      localStorage.setItem('aufrecht-data', JSON.stringify(data));
+      hint.textContent = 'Änderungen werden automatisch gespeichert';
+    }catch(e){
+      hint.textContent = 'Speichern fehlgeschlagen – bitte nochmal versuchen';
+    }
+  }, 300);
+}
+
+function toggleHour(dateStr, hour){
+  const day = ensureDayObj(dateStr);
+  const set = new Set(day.hours);
+  if(set.has(hour)) set.delete(hour); else set.add(hour);
+  day.hours = Array.from(set);
+  saveData();
+  render();
+}
+
+function togglePhysio(dateStr){
+  const day = ensureDayObj(dateStr);
+  day.physio = !day.physio;
+  saveData();
+  render();
+}
+
+function computeStreak(){
+  let streak = 0;
+  let d = new Date();
+  // if today doesn't meet goal yet, start checking from yesterday for streak continuity,
+  // but still count today if it independently meets goal.
+  const todayStr = toDateStr(d);
+  if(countFor(todayStr) >= data.goalHours){
+    streak++;
+  }
+  d.setDate(d.getDate()-1);
+  while(true){
+    const ds = toDateStr(d);
+    if(countFor(ds) >= data.goalHours){
+      streak++;
+      d.setDate(d.getDate()-1);
+    } else break;
+  }
+  return streak;
+}
+
+function buildSpineSVG(filledCount){
+  const N = 24;
+  const segH = 13;
+  const gap = 1.5;
+  const bodyW = 32;
+  const bodyH = 9;
+  const totalH = N * (segH + gap);
+  const cx = 45;
+  let parts = [];
+  // bottom-to-top: index 0 = sacrum (bottom), index 23 = top of neck
+  for(let i = 0; i < N; i++){
+    const y = totalH - (i + 1) * (segH + gap);
+    // gentle S-curve, echoes a natural (and scoliotic) spinal curve
+    const t = i / (N - 1);
+    const offsetX = Math.sin(t * Math.PI * 1.6) * 9;
+    const x = cx + offsetX;
+    const filled = i < filledCount;
+    const cls = filled ? 'filled' : '';
+    // vertebral body
+    parts.push(
+      '<rect class="body ' + cls + '" x="' + (x - bodyW/2) + '" y="' + y +
+      '" width="' + bodyW + '" height="' + bodyH + '" rx="4"></rect>'
+    );
+    // spinous process (small posterior nub, alternating side for a lifelike zigzag)
+    const side = (i % 2 === 0) ? 1 : -1;
+    const procX = x + side * (bodyW/2 - 1);
+    parts.push(
+      '<rect class="process ' + cls + '" x="' + (procX - 1.5) + '" y="' + (y + bodyH/2 - 1.5) +
+      '" width="' + (side > 0 ? 6 : 6) + '" height="3" rx="1.5" transform="translate(' +
+      (side > 0 ? 0 : -3) + ',0)"></rect>'
+    );
+  }
+  return '<svg viewBox="0 0 90 ' + totalH + '" xmlns="http://www.w3.org/2000/svg">' + parts.join('') + '</svg>';
+}
+
+function render(){
+  if(!loaded) return;
+
+  document.getElementById('dateLabel').textContent = formatLabel(selectedDate);
+  document.getElementById('todayBtn').style.display = (selectedDate === toDateStr(new Date())) ? 'none' : 'block';
+
+  const hrs = hoursFor(selectedDate);
+  const count = hrs.length;
+  const goal = data.goalHours;
+
+  document.getElementById('bigNumber').innerHTML = count + '<span>h</span>';
+  const goalTextEl = document.getElementById('goalText');
+  if(count >= goal){
+    goalTextEl.textContent = 'Ziel erreicht';
+    goalTextEl.classList.add('met');
+  } else {
+    goalTextEl.textContent = 'von ' + goal + 'h Ziel · noch ' + (goal-count) + 'h';
+    goalTextEl.classList.remove('met');
+  }
+
+  // spine
+  document.getElementById('spine').innerHTML = buildSpineSVG(count);
+
+  // hour grid
+  const grid = document.getElementById('hourGrid');
+  grid.innerHTML = '';
+  const hourSet = new Set(hrs);
+  HOUR_GROUPS.forEach(group => {
+    const wrap = document.createElement('div');
+    wrap.className = 'row-group';
+    const label = document.createElement('div');
+    label.className = 'row-label';
+    label.textContent = group.label;
+    wrap.appendChild(label);
+    const row = document.createElement('div');
+    row.className = 'row-hours';
+    for(let h = group.start; h < group.start+6; h++){
+      const btn = document.createElement('button');
+      btn.className = 'hour-btn' + (hourSet.has(h) ? ' on' : '');
+      btn.textContent = String(h).padStart(2,'0');
+      btn.addEventListener('click', () => toggleHour(selectedDate, h));
+      row.appendChild(btn);
+    }
+    wrap.appendChild(row);
+    grid.appendChild(wrap);
+  });
+
+  // streak
+  document.getElementById('streakBadge').textContent = computeStreak() + ' Tage in Folge';
+
+  // physio
+  const physioDone = physioFor(selectedDate);
+  const physioBtn = document.getElementById('physioBtn');
+  const physioSub = document.getElementById('physioSub');
+  const physioLabel = document.getElementById('physioBtnLabel');
+  physioBtn.classList.toggle('done', physioDone);
+  physioSub.classList.toggle('done', physioDone);
+  if(physioDone){
+    physioSub.textContent = 'Erledigt';
+    physioLabel.textContent = 'Erledigt';
+  } else {
+    physioSub.textContent = (selectedDate === toDateStr(new Date())) ? 'Heute noch offen' : 'Nicht erledigt';
+    physioLabel.textContent = 'Erledigt markieren';
+  }
+
+  // goal setting
+  document.getElementById('goalVal').textContent = goal + 'h';
+
+  // heatmap: last 28 days
+  const heatmap = document.getElementById('heatmap');
+  heatmap.innerHTML = '';
+  const cells = [];
+  for(let i=27;i>=0;i--){
+    const d = new Date();
+    d.setDate(d.getDate()-i);
+    cells.push(toDateStr(d));
+  }
+  cells.forEach(ds => {
+    const c = countFor(ds);
+    const p = physioFor(ds);
+    const cell = document.createElement('div');
+    cell.className = 'day-cell' + (ds === selectedDate ? ' selected' : '') + (c > 0 ? ' has-data' : '');
+    let bg = 'var(--empty)';
+    if(c > 0){
+      const ratio = Math.min(c / goal, 1);
+      if(ratio >= 1) bg = 'var(--accent)';
+      else if(ratio >= 0.66) bg = '#5FA0C2';
+      else if(ratio >= 0.33) bg = '#9FC5DA';
+      else bg = '#CFE1EB';
+    }
+    cell.style.background = bg;
+    const num = document.createElement('div');
+    num.className = 'num';
+    num.textContent = fromDateStr(ds).getDate();
+    cell.appendChild(num);
+    if(p){
+      const dot = document.createElement('div');
+      dot.className = 'physio-dot';
+      cell.appendChild(dot);
+    }
+    cell.title = formatLabel(ds) + ': ' + c + 'h' + (p ? ' · Physio erledigt' : '');
+    cell.addEventListener('click', () => { selectedDate = ds; render(); });
+    heatmap.appendChild(cell);
+  });
+}
+
+document.getElementById('prevDay').addEventListener('click', () => {
+  const d = fromDateStr(selectedDate);
+  d.setDate(d.getDate()-1);
+  selectedDate = toDateStr(d);
+  render();
+});
+document.getElementById('nextDay').addEventListener('click', () => {
+  const d = fromDateStr(selectedDate);
+  d.setDate(d.getDate()+1);
+  selectedDate = toDateStr(d);
+  render();
+});
+document.getElementById('todayBtn').addEventListener('click', () => {
+  selectedDate = toDateStr(new Date());
+  render();
+});
+document.getElementById('physioBtn').addEventListener('click', () => {
+  togglePhysio(selectedDate);
+});
+document.getElementById('goalMinus').addEventListener('click', () => {
+  data.goalHours = Math.max(1, data.goalHours - 1);
+  saveData();
+  render();
+});
+document.getElementById('goalPlus').addEventListener('click', () => {
+  data.goalHours = Math.min(24, data.goalHours + 1);
+  saveData();
+  render();
+});
+
+loadData();
+</script>
+</body>
+</html>
