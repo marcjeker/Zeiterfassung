@@ -237,8 +237,14 @@
     margin-top:24px;
   }
   .row-group{
-    margin-bottom:14px;
+    margin-bottom:12px;
+    border-radius:14px;
+    padding:12px;
   }
+  .row-group.grp-night{background:#E7E9F5;}
+  .row-group.grp-morning{background:#FFF3D6;}
+  .row-group.grp-afternoon{background:#FFEAD2;}
+  .row-group.grp-evening{background:#F5E1E9;}
   .row-label{
     font-size:11px;
     text-transform:uppercase;
@@ -246,31 +252,38 @@
     color:var(--text-muted);
     margin-bottom:8px;
     font-weight:600;
+    display:flex;
+    align-items:center;
+    gap:6px;
   }
+  .row-label .icon{font-size:13px;}
   .row-hours{
     display:grid;
     grid-template-columns:repeat(6,1fr);
-    gap:6px;
+    gap:5px;
   }
   .hour-btn{
     aspect-ratio:1;
-    border-radius:8px;
+    border-radius:7px;
     border:1px solid var(--border);
     background:var(--surface);
     color:var(--text-muted);
-    font-size:12px;
+    font-size:9px;
+    font-weight:500;
     cursor:pointer;
     display:flex;
     align-items:center;
     justify-content:center;
     transition:all .1s;
+    padding:0;
+    line-height:1;
   }
   .hour-btn:hover{border-color:var(--accent);}
   .hour-btn.on{
     background:var(--accent);
     border-color:var(--accent);
     color:#fff;
-    font-weight:600;
+    font-weight:700;
   }
   .history-card h2{
     font-family:'Fraunces',serif;
@@ -295,16 +308,28 @@
     cursor:pointer;
     position:relative;
     border:1.5px solid transparent;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:1px;
   }
   .day-cell.selected{border-color:var(--text);}
+  .day-cell.weekend{box-shadow:inset 0 0 0 1.5px var(--warm);}
+  .day-cell .weekday{
+    font-size:8px;
+    text-transform:uppercase;
+    letter-spacing:0.02em;
+    color:var(--text-muted);
+    font-weight:700;
+  }
   .day-cell .num{
-    position:absolute;
-    top:3px;
-    left:5px;
-    font-size:9px;
+    font-size:11px;
+    font-weight:600;
     color:var(--text-muted);
   }
-  .day-cell.has-data .num{color:rgba(255,255,255,0.85);}
+  .day-cell.has-data .num,
+  .day-cell.has-data .weekday{color:rgba(255,255,255,0.9);}
   .legend{
     display:flex;
     align-items:center;
@@ -345,6 +370,28 @@
     color:var(--text-muted);
     margin-top:20px;
   }
+  .badges{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-end;
+    gap:6px;
+  }
+  .stars-badge{
+    background:var(--warm-light);
+    color:#8A5A24;
+    border-radius:20px;
+    padding:6px 12px;
+    font-size:12px;
+    font-weight:600;
+    white-space:nowrap;
+  }
+  .day-star{
+    position:absolute;
+    top:2px;
+    right:2px;
+    font-size:9px;
+    line-height:1;
+  }
 </style>
 </head>
 <body>
@@ -367,7 +414,10 @@
         <div class="subtitle">Trage-Tracker fürs Korsett</div>
       </div>
     </div>
-    <div class="streak" id="streakBadge">– Tage in Folge</div>
+    <div class="badges">
+      <div class="streak" id="streakBadge">– Tage in Folge</div>
+      <div class="stars-badge" id="starsBadge">⭐ 0 Sterne</div>
+    </div>
   </header>
 
   <div class="card wirbi-card">
@@ -437,7 +487,7 @@
 
   <div class="card history-card">
     <h2>Verlauf</h2>
-    <div class="history-sub">Letzte 4 Wochen – dunkler heisst mehr Stunden, Punkt = Physio erledigt</div>
+    <div class="history-sub">Letzte 4 Wochen – dunkler heisst mehr Stunden, Punkt = Physio erledigt, ⭐ = beides an einem Tag geschafft</div>
     <div class="heatmap" id="heatmap"></div>
     <div class="legend">
       <span>Wenig</span>
@@ -463,12 +513,25 @@
 </div>
 
 <script>
+// Jeder Tag hat 48 Halbstunden-Slots (0 = 00:00–00:30 ... 47 = 23:30–00:00)
 const HOUR_GROUPS = [
-  { label: 'Nacht (00–05)', start: 0 },
-  { label: 'Morgen (06–11)', start: 6 },
-  { label: 'Nachmittag (12–17)', start: 12 },
-  { label: 'Abend (18–23)', start: 18 }
+  { label: 'Nacht', icon: '🌙', cls: 'grp-night', startSlot: 0 },
+  { label: 'Morgen', icon: '🌅', cls: 'grp-morning', startSlot: 12 },
+  { label: 'Nachmittag', icon: '☀️', cls: 'grp-afternoon', startSlot: 24 },
+  { label: 'Abend', icon: '🌇', cls: 'grp-evening', startSlot: 36 }
 ];
+function pad2(n){ return String(n).padStart(2,'0'); }
+function slotStartLabel(slot){
+  const h = Math.floor(slot/2);
+  const m = (slot % 2) * 30;
+  return pad2(h) + ':' + pad2(m);
+}
+function slotRangeLabel(slot){
+  const endSlot = slot + 1;
+  const endH = Math.floor(endSlot/2) % 24;
+  const endM = (endSlot % 2) * 30;
+  return slotStartLabel(slot) + '–' + pad2(endH) + ':' + pad2(endM) + ' Uhr';
+}
 
 const HOUR_MESSAGES = [
   'Stark gemacht! 💪',
@@ -532,9 +595,21 @@ function hoursFor(dateStr){
 function countFor(dateStr){
   return hoursFor(dateStr).length;
 }
+function hoursWorn(dateStr){
+  return countFor(dateStr) * 0.5;
+}
+function formatHours(n){
+  return (Math.round(n*2)/2).toString().replace('.', ',');
+}
 function physioFor(dateStr){
   const day = data.days[dateStr];
   return !!(day && !Array.isArray(day) && day.physio);
+}
+function starEarned(dateStr){
+  return hoursWorn(dateStr) >= data.goalHours && physioFor(dateStr);
+}
+function totalStars(){
+  return Object.keys(data.days).filter(ds => starEarned(ds)).length;
 }
 function ensureDayObj(dateStr){
   const existing = data.days[dateStr];
@@ -575,23 +650,38 @@ function saveData(){
   }, 300);
 }
 
+const STAR_MESSAGES = [
+  'Ein Stern für dich! ⭐',
+  'Ziel und Physio – Stern verdient!',
+  'Super, wieder ein Stern gesammelt! 🌟',
+  'Klasse, das gibt einen Stern!'
+];
+
 function toggleHour(dateStr, hour){
   const day = ensureDayObj(dateStr);
+  const starBefore = starEarned(dateStr);
   const set = new Set(day.hours);
   const wasOn = set.has(hour);
   if(wasOn) set.delete(hour); else set.add(hour);
   day.hours = Array.from(set);
   saveData();
   render();
-  if(!wasOn) showAssistantMessage(HOUR_MESSAGES);
+  if(!wasOn){
+    if(!starBefore && starEarned(dateStr)) showAssistantMessage(STAR_MESSAGES);
+    else showAssistantMessage(HOUR_MESSAGES);
+  }
 }
 
 function togglePhysio(dateStr){
   const day = ensureDayObj(dateStr);
+  const starBefore = starEarned(dateStr);
   day.physio = !day.physio;
   saveData();
   render();
-  if(day.physio) showAssistantMessage(PHYSIO_MESSAGES);
+  if(day.physio){
+    if(!starBefore && starEarned(dateStr)) showAssistantMessage(STAR_MESSAGES);
+    else showAssistantMessage(PHYSIO_MESSAGES);
+  }
 }
 
 function computeStreak(){
@@ -600,13 +690,13 @@ function computeStreak(){
   // if today doesn't meet goal yet, start checking from yesterday for streak continuity,
   // but still count today if it independently meets goal.
   const todayStr = toDateStr(d);
-  if(countFor(todayStr) >= data.goalHours){
+  if(hoursWorn(todayStr) >= data.goalHours){
     streak++;
   }
   d.setDate(d.getDate()-1);
   while(true){
     const ds = toDateStr(d);
-    if(countFor(ds) >= data.goalHours){
+    if(hoursWorn(ds) >= data.goalHours){
       streak++;
       d.setDate(d.getDate()-1);
     } else break;
@@ -614,16 +704,16 @@ function computeStreak(){
   return streak;
 }
 
-function buildSpineSVG(filledCount){
-  const N = 24;
-  const segH = 13;
-  const gap = 1.5;
-  const bodyW = 32;
-  const bodyH = 9;
+function buildSpineSVG(filledCount, totalCount){
+  const N = 48;
+  const segH = 6;
+  const gap = 0.8;
+  const bodyW = 30;
+  const bodyH = 4.4;
   const totalH = N * (segH + gap);
   const cx = 45;
   let parts = [];
-  // bottom-to-top: index 0 = sacrum (bottom), index 23 = top of neck
+  // bottom-to-top: index 0 = sacrum (bottom), index 47 = top of neck
   for(let i = 0; i < N; i++){
     const y = totalH - (i + 1) * (segH + gap);
     // gentle S-curve, echoes a natural (and scoliotic) spinal curve
@@ -635,16 +725,17 @@ function buildSpineSVG(filledCount){
     // vertebral body
     parts.push(
       '<rect class="body ' + cls + '" x="' + (x - bodyW/2) + '" y="' + y +
-      '" width="' + bodyW + '" height="' + bodyH + '" rx="4"></rect>'
+      '" width="' + bodyW + '" height="' + bodyH + '" rx="2.2"></rect>'
     );
-    // spinous process (small posterior nub, alternating side for a lifelike zigzag)
-    const side = (i % 2 === 0) ? 1 : -1;
-    const procX = x + side * (bodyW/2 - 1);
-    parts.push(
-      '<rect class="process ' + cls + '" x="' + (procX - 1.5) + '" y="' + (y + bodyH/2 - 1.5) +
-      '" width="' + (side > 0 ? 6 : 6) + '" height="3" rx="1.5" transform="translate(' +
-      (side > 0 ? 0 : -3) + ',0)"></rect>'
-    );
+    // spinous process (small posterior nub, alternating side for a lifelike zigzag), every 2nd vertebra
+    if(i % 2 === 0){
+      const side = ((i/2) % 2 === 0) ? 1 : -1;
+      const procX = x + side * (bodyW/2 - 1);
+      parts.push(
+        '<rect class="process ' + cls + '" x="' + (procX - 1.2) + '" y="' + (y + bodyH/2 - 1.2) +
+        '" width="4" height="2.4" rx="1.2"></rect>'
+      );
+    }
   }
   return '<svg viewBox="0 0 90 ' + totalH + '" xmlns="http://www.w3.org/2000/svg">' + parts.join('') + '</svg>';
 }
@@ -657,15 +748,16 @@ function render(){
 
   const hrs = hoursFor(selectedDate);
   const count = hrs.length;
+  const worn = hoursWorn(selectedDate);
   const goal = data.goalHours;
 
-  document.getElementById('bigNumber').innerHTML = count + '<span>h</span>';
+  document.getElementById('bigNumber').innerHTML = formatHours(worn) + '<span>h</span>';
   const goalTextEl = document.getElementById('goalText');
-  if(count >= goal){
+  if(worn >= goal){
     goalTextEl.textContent = 'Ziel erreicht';
     goalTextEl.classList.add('met');
   } else {
-    goalTextEl.textContent = 'von ' + goal + 'h Ziel · noch ' + (goal-count) + 'h';
+    goalTextEl.textContent = 'von ' + goal + 'h Ziel · noch ' + formatHours(goal-worn) + 'h';
     goalTextEl.classList.remove('met');
   }
 
@@ -678,18 +770,19 @@ function render(){
   const hourSet = new Set(hrs);
   HOUR_GROUPS.forEach(group => {
     const wrap = document.createElement('div');
-    wrap.className = 'row-group';
+    wrap.className = 'row-group ' + group.cls;
     const label = document.createElement('div');
     label.className = 'row-label';
-    label.textContent = group.label;
+    label.innerHTML = '<span class="icon">' + group.icon + '</span><span>' + group.label + '</span>';
     wrap.appendChild(label);
     const row = document.createElement('div');
     row.className = 'row-hours';
-    for(let h = group.start; h < group.start+6; h++){
+    for(let slot = group.startSlot; slot < group.startSlot + 12; slot++){
       const btn = document.createElement('button');
-      btn.className = 'hour-btn' + (hourSet.has(h) ? ' on' : '');
-      btn.textContent = String(h).padStart(2,'0');
-      btn.addEventListener('click', () => toggleHour(selectedDate, h));
+      btn.className = 'hour-btn' + (hourSet.has(slot) ? ' on' : '');
+      btn.textContent = slotStartLabel(slot);
+      btn.title = slotRangeLabel(slot);
+      btn.addEventListener('click', () => toggleHour(selectedDate, slot));
       row.appendChild(btn);
     }
     wrap.appendChild(row);
@@ -698,6 +791,7 @@ function render(){
 
   // streak
   document.getElementById('streakBadge').textContent = computeStreak() + ' Tage in Folge';
+  document.getElementById('starsBadge').textContent = '⭐ ' + totalStars() + ' Sterne';
 
   // physio
   const physioDone = physioFor(selectedDate);
@@ -727,29 +821,43 @@ function render(){
     cells.push(toDateStr(d));
   }
   cells.forEach(ds => {
-    const c = countFor(ds);
+    const worn = hoursWorn(ds);
     const p = physioFor(ds);
+    const dateObj = fromDateStr(ds);
+    const dow = dateObj.getDay(); // 0 = Sonntag, 6 = Samstag
+    const isWeekend = (dow === 0 || dow === 6);
     const cell = document.createElement('div');
-    cell.className = 'day-cell' + (ds === selectedDate ? ' selected' : '') + (c > 0 ? ' has-data' : '');
+    cell.className = 'day-cell' + (ds === selectedDate ? ' selected' : '') + (worn > 0 ? ' has-data' : '') + (isWeekend ? ' weekend' : '');
     let bg = 'var(--empty)';
-    if(c > 0){
-      const ratio = Math.min(c / goal, 1);
+    if(worn > 0){
+      const ratio = Math.min(worn / goal, 1);
       if(ratio >= 1) bg = 'var(--accent)';
       else if(ratio >= 0.66) bg = '#5FA0C2';
       else if(ratio >= 0.33) bg = '#9FC5DA';
       else bg = '#CFE1EB';
     }
     cell.style.background = bg;
+    const weekday = document.createElement('div');
+    weekday.className = 'weekday';
+    weekday.textContent = dateObj.toLocaleDateString('de-DE', { weekday: 'short' }).replace('.', '');
+    cell.appendChild(weekday);
     const num = document.createElement('div');
     num.className = 'num';
-    num.textContent = fromDateStr(ds).getDate();
+    num.textContent = dateObj.getDate() + '.' + (dateObj.getMonth()+1) + '.';
     cell.appendChild(num);
     if(p){
       const dot = document.createElement('div');
       dot.className = 'physio-dot';
       cell.appendChild(dot);
     }
-    cell.title = formatLabel(ds) + ': ' + c + 'h' + (p ? ' · Physio erledigt' : '');
+    if(starEarned(ds)){
+      const star = document.createElement('div');
+      star.className = 'day-star';
+      star.textContent = '⭐';
+      cell.appendChild(star);
+    }
+    const fullDate = dateObj.toLocaleDateString('de-DE', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    cell.title = fullDate + ': ' + formatHours(worn) + 'h' + (p ? ' · Physio erledigt' : '') + (starEarned(ds) ? ' · Stern!' : '') + (isWeekend ? ' · Wochenende' : '');
     cell.addEventListener('click', () => { selectedDate = ds; render(); });
     heatmap.appendChild(cell);
   });
